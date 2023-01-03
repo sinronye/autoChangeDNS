@@ -1,0 +1,56 @@
+#!/bin/bash
+
+defaultDNS='192.168.10.1'  #主路由 IP
+adGuardDNS='192.168.10.110'  #旁路由 IP （需设置的主路由网关 地址）
+curLanDNS=`uci get network.lan.dns | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'`
+
+
+#curLanDNS='192.168.10.110'
+
+echo "current DNS IP: $curLanDNS"
+echo "adGuardHome IP: $adGuardDNS"
+
+#echo '#Check weather the adGuardHome is online.'
+#packetRcv=`ping -c 3 $adGuardDNS | grep packets | awk '{print $4}'`
+
+#packetRcv=`dig www.baidu.com @$adGuardDNS | grep NOERROR | awk '{print $5}'`
+packetRcv=`dig d-pot +timeout=2 www.baidu.com @$adGuardDNS | grep status:\ NOERROR | awk '{print $8}'`
+
+#packetRcv=6
+
+echo $packetRcv
+#packetRcv=3
+# If the gateway of the up close, the network is completely unusable
+
+if [ $(($packetRcv)) -eq 0 ]; then {
+    echo "packets recived is 0"
+    if [ "$curLanDNS" == "$adGuardDNS" ]; then { 
+        echo "adGuardHome is offline, switched to default DNS"
+        uci del dhcp.lan.dhcp_option
+        uci del network.lan.dns
+        uci add_list network.lan.dns="$defaultDNS"
+        uci add_list dhcp.lan.dhcp_option="6,$defaultDNS"
+        uci commit
+        /etc/init.d/network restart
+    } else {
+        echo "adGuardHone still offline, no change!"
+    }
+    fi
+} else {
+    if [ "$curLanDNS" != "$adGuardDNS" ]; then {
+
+        echo "adGuardHome is online, switched as DNS server."
+        uci del dhcp.lan.dhcp_option
+        uci del network.lan.dns
+        uci add_list network.lan.dns="$adGuardDNS"
+        uci add_list dhcp.lan.dhcp_option="6,$adGuardDNS,$defaultDNS"
+        uci commit
+        /etc/init.d/network restart
+    } else {
+        echo "current dns is adGuardHome, no change"
+    }
+    fi
+}
+
+fi
+
