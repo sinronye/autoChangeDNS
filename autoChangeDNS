@@ -1,7 +1,7 @@
 #!/bin/bash
 
-defaultDNS='192.168.10.1'  #主路由 IP
-adGuardDNS='192.168.10.110'  #旁路由 IP （需设置的主路由网关 地址）
+defaultDNS='192.168.10.1'
+adGuardDNS='192.168.10.110'  
 curLanDNS=`uci get network.lan.dns | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'`
 
 
